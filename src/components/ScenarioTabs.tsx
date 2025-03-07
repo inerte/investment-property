@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusCircle } from "lucide-react";
-import { z } from "zod";
 
 // Import the form schema type from MortgageCalculator
 import type { FormSchema } from "./MortgageCalculator";

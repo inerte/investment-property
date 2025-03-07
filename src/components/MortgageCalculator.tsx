@@ -86,6 +86,26 @@ type ScheduleEntry = {
   remainingBalance: number;
 };
 
+type ResultsType = {
+  current: {
+    monthlyPayment: string;
+    totalInterest: string;
+    schedule: ScheduleEntry[];
+  };
+  refinance: {
+    monthlyPayment: string;
+    totalInterest: string;
+    breakEven: number;
+    closingCosts: string;
+    schedule: ScheduleEntry[];
+  };
+  recast: {
+    monthlyPayment: string;
+    totalInterest: string;
+    schedule: ScheduleEntry[];
+  };
+} | null;
+
 function calculatePaymentBreakdown(
   payment: number,
   principal: number,
@@ -102,7 +122,7 @@ function calculatePaymentBreakdown(
 export function MortgageCalculator() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [activeScenarioId, setActiveScenarioId] = useState<string>("");
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<ResultsType>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const form = useForm<FormSchema>({
