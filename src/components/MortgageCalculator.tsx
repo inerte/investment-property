@@ -182,15 +182,45 @@ export function MortgageCalculator() {
     }
   }, [scenarios, isLoading]);
 
-  const handleScenarioAdd = () => {
+  const handleScenarioAdd = (cloneFrom?: string) => {
+    const baseData = cloneFrom
+      ? scenarios.find((s) => s.id === cloneFrom)?.data || form.getValues()
+      : {
+          currentBalance: 0,
+          currentRate: 0,
+          monthlyPayment: 0,
+          remainingTerm: 0,
+          propertyValue: 0,
+          newRate: 0,
+          lumpSum: 0,
+        };
+
     const newScenario: Scenario = {
       id: uuidv4(),
       name: `Scenario ${scenarios.length + 1}`,
-      data: form.getValues(),
+      data: baseData,
     };
-    setScenarios([...scenarios, newScenario]);
+
+    // Save current scenario before switching
+    const updatedScenarios = scenarios.map((s) =>
+      s.id === activeScenarioId ? { ...s, data: form.getValues() } : s
+    );
+
+    setScenarios([...updatedScenarios, newScenario]);
     setActiveScenarioId(newScenario.id);
     form.reset(newScenario.data);
+  };
+
+  const handleScenarioDelete = (id: string) => {
+    const updatedScenarios = scenarios.filter((s) => s.id !== id);
+    setScenarios(updatedScenarios);
+
+    if (id === activeScenarioId) {
+      const newActiveScenario = updatedScenarios[0];
+      setActiveScenarioId(newActiveScenario.id);
+      form.reset(newActiveScenario.data);
+      calculateMortgageOptions(newActiveScenario.data);
+    }
   };
 
   const handleScenarioChange = (id: string) => {
@@ -216,12 +246,28 @@ export function MortgageCalculator() {
   };
 
   function calculateMortgageOptions(values: FormSchema) {
+    // Add validation to prevent calculation with invalid values
+    if (
+      !values.currentBalance ||
+      !values.currentRate ||
+      !values.remainingTerm
+    ) {
+      setResults(null);
+      return;
+    }
+
     // Calculate current mortgage details
     const currentMonthlyPayment = calculateMonthlyPayment({
       principal: values.currentBalance,
       annualRate: values.currentRate,
       termMonths: values.remainingTerm,
     });
+
+    // Update the form with the calculated monthly payment if it's not set
+    if (!values.monthlyPayment) {
+      form.setValue("monthlyPayment", currentMonthlyPayment);
+      values.monthlyPayment = currentMonthlyPayment;
+    }
 
     const currentTotalInterest = calculateTotalInterest({
       principal: values.currentBalance,
@@ -328,6 +374,7 @@ export function MortgageCalculator() {
             onScenarioChange={handleScenarioChange}
             onScenarioAdd={handleScenarioAdd}
             onScenarioRename={handleScenarioRename}
+            onScenarioDelete={handleScenarioDelete}
           />
           <Form {...form}>
             <form
