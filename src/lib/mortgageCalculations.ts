@@ -23,7 +23,21 @@ export function calculateTotalInterest({
   termMonths,
   monthlyPayment,
 }: MortgageParams & { monthlyPayment: number }): number {
-  return monthlyPayment * termMonths - principal;
+  const monthlyRate = annualRate / 100 / 12;
+  let balance = principal;
+  let totalInterest = 0;
+
+  for (let month = 1; month <= termMonths; month++) {
+    const interestPayment = balance * monthlyRate;
+    const principalPayment = monthlyPayment - interestPayment;
+
+    totalInterest += interestPayment;
+    balance -= principalPayment;
+
+    if (balance <= 0) break;
+  }
+
+  return totalInterest;
 }
 
 export function calculateRecastPayment({

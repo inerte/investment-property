@@ -24,7 +24,6 @@ import {
   calculateRecastPayment,
   calculateBreakEvenMonths,
   calculateAmortizationSchedule,
-  type MortgageParams,
 } from "@/lib/mortgageCalculations";
 
 const STORAGE_KEY = "mortgageCalculator";
@@ -61,7 +60,7 @@ const formSchema = z.object({
   lumpSum: z.coerce.number().min(0, "Lump sum must be 0 or greater").default(0),
 });
 
-type FormSchema = z.infer<typeof formSchema>;
+export type FormSchema = z.infer<typeof formSchema>;
 
 const REFINANCE_CLOSING_COSTS_PERCENTAGE = 0.03; // 3% of loan amount
 
@@ -154,7 +153,7 @@ export function MortgageCalculator() {
       setActiveScenarioId(initialScenario.id);
     }
     setIsLoading(false);
-  }, []);
+  }, [form]);
 
   // Save scenarios whenever they change
   useEffect(() => {
