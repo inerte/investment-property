@@ -25,6 +25,12 @@ import {
   calculateBreakEvenMonths,
   calculateAmortizationSchedule,
 } from "@/lib/mortgageCalculations";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const STORAGE_KEY = "mortgageCalculator";
 
@@ -71,6 +77,11 @@ const formSchema = z.object({
     .min(0, "Years must be 0 or greater")
     .max(100, "Years must be less than 100")
     .default(30),
+  estimatedClosingCosts: z.coerce
+    .number()
+    .min(0, "Closing costs must be 0 or greater")
+    .default(0),
+  useDetailedClosingCosts: z.boolean().default(false),
   refinanceClosingCosts: z
     .object({
       titleInsurance: z.coerce.number().min(0).default(0),
@@ -164,6 +175,8 @@ export function MortgageCalculator() {
       newRate: 0,
       lumpSum: 0,
       plannedStayYears: 30,
+      estimatedClosingCosts: 0,
+      useDetailedClosingCosts: false,
       refinanceClosingCosts: defaultRefinanceClosingCosts,
       recastFee: 250,
       alternativeInvestmentReturn: 7,
@@ -226,6 +239,8 @@ export function MortgageCalculator() {
           newRate: 0,
           lumpSum: 0,
           plannedStayYears: 30,
+          estimatedClosingCosts: 0,
+          useDetailedClosingCosts: false,
           refinanceClosingCosts: defaultRefinanceClosingCosts,
           recastFee: 250,
           alternativeInvestmentReturn: 7,
@@ -312,18 +327,23 @@ export function MortgageCalculator() {
       monthlyPayment: currentMonthlyPayment,
     });
 
-    // Calculate total closing costs from individual components
-    const totalClosingCosts =
-      (values.refinanceClosingCosts?.titleInsurance || 0) +
-      (values.refinanceClosingCosts?.appraisalFee || 0) +
-      (values.refinanceClosingCosts?.originationFee || 0) +
-      (values.refinanceClosingCosts?.recordingFees || 0) +
-      (values.refinanceClosingCosts?.otherFees || 0);
+    // Calculate refinance closing costs
+    let refinanceClosingCosts = values.estimatedClosingCosts;
+    if (!refinanceClosingCosts) {
+      // If no closing costs provided, use 3% of loan amount
+      refinanceClosingCosts =
+        values.currentBalance * REFINANCE_CLOSING_COSTS_PERCENTAGE;
+    }
+
+    // If detailed closing costs are provided, use their sum instead
+    const detailedClosingCosts = Object.values(
+      values.refinanceClosingCosts || {}
+    ).reduce((sum, fee) => sum + (fee || 0), 0);
+    if (detailedClosingCosts > 0) {
+      refinanceClosingCosts = detailedClosingCosts;
+    }
 
     // Calculate refinance option (applying lump sum to reduce principal)
-    const refinanceClosingCosts =
-      totalClosingCosts ||
-      values.currentBalance * REFINANCE_CLOSING_COSTS_PERCENTAGE;
     const refinancePrincipal = values.currentBalance - (values.lumpSum || 0);
     const refinanceMonthlyPayment = calculateMonthlyPayment({
       principal: refinancePrincipal,
@@ -585,100 +605,148 @@ export function MortgageCalculator() {
                 />
                 <FormField
                   control={form.control}
-                  name="refinanceClosingCosts.titleInsurance"
+                  name="estimatedClosingCosts"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title Insurance</FormLabel>
+                      <FormLabel>Estimated Closing Costs ($)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="0"
+                          placeholder={(
+                            form.getValues().currentBalance * 0.03
+                          ).toFixed(2)}
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Typically 2-5% of loan amount. Default is 3% (
+                        {currencyFormatter.format(
+                          form.getValues().currentBalance * 0.03
+                        )}
+                        )
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="refinanceClosingCosts.appraisalFee"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Appraisal Fee</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          {...field}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="closing-costs">
+                    <AccordionTrigger>
+                      Detailed Closing Costs Breakdown
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="refinanceClosingCosts.originationFee"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Loan Origination Fee ($)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Usually 0.5-1% of loan amount
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="refinanceClosingCosts.originationFee"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Origination Fee</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          {...field}
+                        <FormField
+                          control={form.control}
+                          name="refinanceClosingCosts.titleInsurance"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Title Insurance ($)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="refinanceClosingCosts.recordingFees"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recording Fees</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          {...field}
+                        <FormField
+                          control={form.control}
+                          name="refinanceClosingCosts.appraisalFee"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Appraisal Fee ($)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Typically $300-$500
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="refinanceClosingCosts.otherFees"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Other Fees</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          {...field}
+                        <FormField
+                          control={form.control}
+                          name="refinanceClosingCosts.recordingFees"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Recording Fees ($)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormField
+                          control={form.control}
+                          name="refinanceClosingCosts.otherFees"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Other Fees ($)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Additional fees like credit report, flood
+                                certification, etc.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 <FormField
                   control={form.control}
                   name="recastFee"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Recast Fee</FormLabel>
+                      <FormLabel>Recast Fee ($)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -687,6 +755,10 @@ export function MortgageCalculator() {
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>
+                        One-time fee charged by the lender to recast your
+                        mortgage. Typically $200-$500.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -705,6 +777,12 @@ export function MortgageCalculator() {
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Expected annual return if you invested the lump sum
+                        instead of using it for recast/refinance. Common
+                        benchmarks: Stock market (7-10%), High-yield savings
+                        (4-5%), Corporate bonds (5-7%).
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -726,6 +804,8 @@ export function MortgageCalculator() {
                       newRate: 0,
                       lumpSum: 0,
                       plannedStayYears: 30,
+                      estimatedClosingCosts: 0,
+                      useDetailedClosingCosts: false,
                       refinanceClosingCosts: defaultRefinanceClosingCosts,
                       recastFee: 250,
                       alternativeInvestmentReturn: 7,
