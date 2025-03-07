@@ -28,6 +28,14 @@ import {
 
 const STORAGE_KEY = "mortgageCalculator";
 
+const defaultRefinanceClosingCosts = {
+  titleInsurance: 0,
+  appraisalFee: 0,
+  originationFee: 0,
+  recordingFees: 0,
+  otherFees: 0,
+};
+
 const formSchema = z.object({
   currentBalance: z.coerce
     .number()
@@ -58,6 +66,26 @@ const formSchema = z.object({
     .max(100, "Rate must be less than 100")
     .default(0),
   lumpSum: z.coerce.number().min(0, "Lump sum must be 0 or greater").default(0),
+  plannedStayYears: z.coerce
+    .number()
+    .min(0, "Years must be 0 or greater")
+    .max(100, "Years must be less than 100")
+    .default(30),
+  refinanceClosingCosts: z
+    .object({
+      titleInsurance: z.coerce.number().min(0).default(0),
+      appraisalFee: z.coerce.number().min(0).default(0),
+      originationFee: z.coerce.number().min(0).default(0),
+      recordingFees: z.coerce.number().min(0).default(0),
+      otherFees: z.coerce.number().min(0).default(0),
+    })
+    .default(defaultRefinanceClosingCosts),
+  recastFee: z.coerce.number().min(0).default(250),
+  alternativeInvestmentReturn: z.coerce
+    .number()
+    .min(0, "Return must be 0 or greater")
+    .max(100, "Return must be less than 100")
+    .default(7),
 });
 
 export type FormSchema = z.infer<typeof formSchema>;
@@ -135,6 +163,10 @@ export function MortgageCalculator() {
       propertyValue: 0,
       newRate: 0,
       lumpSum: 0,
+      plannedStayYears: 30,
+      refinanceClosingCosts: defaultRefinanceClosingCosts,
+      recastFee: 250,
+      alternativeInvestmentReturn: 7,
     },
     mode: "onChange",
   });
@@ -193,6 +225,10 @@ export function MortgageCalculator() {
           propertyValue: 0,
           newRate: 0,
           lumpSum: 0,
+          plannedStayYears: 30,
+          refinanceClosingCosts: defaultRefinanceClosingCosts,
+          recastFee: 250,
+          alternativeInvestmentReturn: 7,
         };
 
     const newScenario: Scenario = {
@@ -276,10 +312,19 @@ export function MortgageCalculator() {
       monthlyPayment: currentMonthlyPayment,
     });
 
+    // Calculate total closing costs from individual components
+    const totalClosingCosts =
+      (values.refinanceClosingCosts?.titleInsurance || 0) +
+      (values.refinanceClosingCosts?.appraisalFee || 0) +
+      (values.refinanceClosingCosts?.originationFee || 0) +
+      (values.refinanceClosingCosts?.recordingFees || 0) +
+      (values.refinanceClosingCosts?.otherFees || 0);
+
     // Calculate refinance option (applying lump sum to reduce principal)
     const refinanceClosingCosts =
+      totalClosingCosts ||
       values.currentBalance * REFINANCE_CLOSING_COSTS_PERCENTAGE;
-    const refinancePrincipal = values.currentBalance - values.lumpSum;
+    const refinancePrincipal = values.currentBalance - (values.lumpSum || 0);
     const refinanceMonthlyPayment = calculateMonthlyPayment({
       principal: refinancePrincipal,
       annualRate: values.newRate,
@@ -520,6 +565,150 @@ export function MortgageCalculator() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="plannedStayYears"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Planned Stay Years</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="1"
+                          placeholder="30"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="refinanceClosingCosts.titleInsurance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title Insurance</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="refinanceClosingCosts.appraisalFee"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Appraisal Fee</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="refinanceClosingCosts.originationFee"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Origination Fee</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="refinanceClosingCosts.recordingFees"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recording Fees</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="refinanceClosingCosts.otherFees"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Other Fees</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="recastFee"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recast Fee</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="250"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="alternativeInvestmentReturn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alternative Investment Return (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.125"
+                          placeholder="7"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
               <div className="flex gap-4">
                 <Button type="submit">Calculate Options</Button>
@@ -536,6 +725,10 @@ export function MortgageCalculator() {
                       propertyValue: 0,
                       newRate: 0,
                       lumpSum: 0,
+                      plannedStayYears: 30,
+                      refinanceClosingCosts: defaultRefinanceClosingCosts,
+                      recastFee: 250,
+                      alternativeInvestmentReturn: 7,
                     });
                     setResults(null);
                   }}
@@ -922,6 +1115,145 @@ export function MortgageCalculator() {
                   shows how your payment is split between Principal and
                   Interest.
                 </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-4">
+                  Decision Analysis
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Break-even Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>
+                        Based on your planned stay of{" "}
+                        {form.getValues().plannedStayYears} years:
+                      </p>
+                      {(() => {
+                        const monthsPlanned =
+                          form.getValues().plannedStayYears * 12;
+                        const refinanceBreakEven = results.refinance.breakEven;
+                        const isWorthRefinancing =
+                          monthsPlanned > refinanceBreakEven;
+
+                        // Calculate total closing costs
+                        const closingCosts = Object.values(
+                          form.getValues().refinanceClosingCosts || {}
+                        ).reduce((sum, fee) => sum + (fee || 0), 0);
+
+                        // Calculate monthly savings
+                        const monthlySavings =
+                          results.current.schedule[0].payment -
+                          results.refinance.schedule[0].payment;
+
+                        // Calculate total savings over planned stay
+                        const totalSavings =
+                          monthlySavings * monthsPlanned - closingCosts;
+
+                        return (
+                          <div className="mt-4 space-y-2">
+                            <p
+                              className={
+                                isWorthRefinancing
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }
+                            >
+                              {isWorthRefinancing
+                                ? `Refinancing could be worthwhile - you'll break even in ${refinanceBreakEven} months and stay ${
+                                    monthsPlanned - refinanceBreakEven
+                                  } months after.`
+                                : `Refinancing might not be worth it - you'll move ${
+                                    refinanceBreakEven - monthsPlanned
+                                  } months before breaking even.`}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Monthly payment savings:{" "}
+                              {currencyFormatter.format(monthlySavings)}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Total closing costs:{" "}
+                              {currencyFormatter.format(closingCosts)}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Total savings after {monthsPlanned} months:{" "}
+                              {currencyFormatter.format(totalSavings)}
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Opportunity Cost Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {(() => {
+                        const lumpSum = form.getValues().lumpSum || 0;
+                        const annualReturn =
+                          (form.getValues().alternativeInvestmentReturn || 0) /
+                          100;
+                        const monthsPlanned =
+                          form.getValues().plannedStayYears * 12;
+
+                        const investmentValue =
+                          lumpSum *
+                          Math.pow(
+                            1 + annualReturn,
+                            form.getValues().plannedStayYears
+                          );
+                        const recastSavings =
+                          (results.current.schedule[0].payment -
+                            results.recast.schedule[0].payment) *
+                            monthsPlanned -
+                          (form.getValues().recastFee || 0);
+
+                        const isInvestingBetter =
+                          investmentValue > recastSavings + lumpSum;
+
+                        return (
+                          <div className="space-y-2">
+                            <p>
+                              If you invest the lump sum instead (
+                              {percentFormatter.format(annualReturn)} annual
+                              return):
+                            </p>
+                            <p className="font-medium">
+                              Investment value after{" "}
+                              {form.getValues().plannedStayYears} years:{" "}
+                              {currencyFormatter.format(investmentValue)}
+                            </p>
+                            <p className="font-medium">
+                              Recast savings after{" "}
+                              {form.getValues().plannedStayYears} years:{" "}
+                              {currencyFormatter.format(
+                                recastSavings + lumpSum
+                              )}
+                            </p>
+                            <p
+                              className={
+                                isInvestingBetter
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }
+                            >
+                              {isInvestingBetter
+                                ? `Consider investing instead of recasting - you could earn ${currencyFormatter.format(
+                                    investmentValue - (recastSavings + lumpSum)
+                                  )} more`
+                                : `Recasting might be better - you'd save ${currencyFormatter.format(
+                                    recastSavings + lumpSum - investmentValue
+                                  )} more than investing`}
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
           )}
