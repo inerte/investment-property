@@ -1,5 +1,6 @@
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -46,10 +47,11 @@
   --ring: #52525b;
 }
 
-* {
-  @apply border-border;
-}
-
-body {
-  @apply bg-background text-foreground;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
