@@ -31,6 +31,23 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { InfoIcon } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const STORAGE_KEY = "mortgageCalculator";
 
@@ -156,6 +173,56 @@ function calculatePaymentBreakdown(
     principalPercentage: percentFormatter.format(principalPercentage),
     interestPercentage: percentFormatter.format(interestPercentage),
   };
+}
+
+function TooltipLabel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1 cursor-help">
+            {label} <InfoIcon className="h-4 w-4" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="max-w-xs">{children}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// Add type definition for investment data point
+type InvestmentDataPoint = {
+  year: number;
+  [key: string]: number;
+};
+
+function generateInvestmentComparison(
+  lumpSum: number,
+  years: number
+): InvestmentDataPoint[] {
+  const data: InvestmentDataPoint[] = [];
+  const scenarios = [
+    { name: "Conservative (4%)", rate: 0.04 },
+    { name: "Moderate (7%)", rate: 0.07 },
+    { name: "Aggressive (10%)", rate: 0.1 },
+  ];
+
+  for (let year = 0; year <= years; year++) {
+    const point: InvestmentDataPoint = { year };
+    scenarios.forEach(({ name, rate }) => {
+      point[name] = Math.round(lumpSum * Math.pow(1 + rate, year));
+    });
+    data.push(point);
+  }
+  return data;
 }
 
 export function MortgageCalculator() {
@@ -427,7 +494,7 @@ export function MortgageCalculator() {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <Card>
         <CardHeader>
           <CardTitle>Mortgage Calculator</CardTitle>
@@ -453,13 +520,19 @@ export function MortgageCalculator() {
               })}
               className="space-y-8"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <FormField
                   control={form.control}
                   name="currentBalance"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Mortgage Balance ($)</FormLabel>
+                      <FormLabel>
+                        <TooltipLabel label="Current Mortgage Balance ($)">
+                          The remaining principal balance on your current
+                          mortgage. This can be found on your most recent
+                          mortgage statement.
+                        </TooltipLabel>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -823,7 +896,7 @@ export function MortgageCalculator() {
             <div className="mt-8 space-y-8">
               <div>
                 <h3 className="text-lg font-semibold mb-4">Summary</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   <Card>
                     <CardHeader>
                       <CardTitle>Current Mortgage</CardTitle>
@@ -940,254 +1013,258 @@ export function MortgageCalculator() {
                 <h3 className="text-lg font-semibold mb-4">
                   Payment Schedule Comparison
                 </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="p-2 text-left border" colSpan={5}>
-                          Current Mortgage
-                        </th>
-                        <th className="p-2 text-left border" colSpan={5}>
-                          Refinance Option
-                        </th>
-                        <th className="p-2 text-left border" colSpan={5}>
-                          Recast Option
-                        </th>
-                      </tr>
-                      <tr className="bg-gray-50">
-                        <th className="p-2 text-left border">Month</th>
-                        <th className="p-2 text-left border">Payment</th>
-                        <th className="p-2 text-left border">Principal</th>
-                        <th className="p-2 text-left border">Interest</th>
-                        <th className="p-2 text-left border">Ratio (P/I)</th>
-                        <th className="p-2 text-left border">Payment</th>
-                        <th className="p-2 text-left border">Principal</th>
-                        <th className="p-2 text-left border">Interest</th>
-                        <th className="p-2 text-left border">Ratio (P/I)</th>
-                        <th className="p-2 text-left border">Savings</th>
-                        <th className="p-2 text-left border">Payment</th>
-                        <th className="p-2 text-left border">Principal</th>
-                        <th className="p-2 text-left border">Interest</th>
-                        <th className="p-2 text-left border">Ratio (P/I)</th>
-                        <th className="p-2 text-left border">Savings</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.current.schedule
-                        .slice(0, 24)
-                        .map((current: ScheduleEntry, index: number) => {
-                          const refinance = results.refinance.schedule[index];
-                          const recast = results.recast.schedule[index];
-                          const refinanceSavings =
-                            current.payment - refinance.payment;
-                          const recastSavings =
-                            current.payment - recast.payment;
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <table className="min-w-full divide-y divide-gray-300">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-2 text-left border" colSpan={5}>
+                            Current Mortgage
+                          </th>
+                          <th className="p-2 text-left border" colSpan={5}>
+                            Refinance Option
+                          </th>
+                          <th className="p-2 text-left border" colSpan={5}>
+                            Recast Option
+                          </th>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <th className="p-2 text-left border">Month</th>
+                          <th className="p-2 text-left border">Payment</th>
+                          <th className="p-2 text-left border">Principal</th>
+                          <th className="p-2 text-left border">Interest</th>
+                          <th className="p-2 text-left border">Ratio (P/I)</th>
+                          <th className="p-2 text-left border">Payment</th>
+                          <th className="p-2 text-left border">Principal</th>
+                          <th className="p-2 text-left border">Interest</th>
+                          <th className="p-2 text-left border">Ratio (P/I)</th>
+                          <th className="p-2 text-left border">Savings</th>
+                          <th className="p-2 text-left border">Payment</th>
+                          <th className="p-2 text-left border">Principal</th>
+                          <th className="p-2 text-left border">Interest</th>
+                          <th className="p-2 text-left border">Ratio (P/I)</th>
+                          <th className="p-2 text-left border">Savings</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.current.schedule
+                          .slice(0, 24)
+                          .map((current: ScheduleEntry, index: number) => {
+                            const refinance = results.refinance.schedule[index];
+                            const recast = results.recast.schedule[index];
+                            const refinanceSavings =
+                              current.payment - refinance.payment;
+                            const recastSavings =
+                              current.payment - recast.payment;
 
-                          const currentRatio = calculatePaymentBreakdown(
-                            current.payment,
-                            current.principal,
-                            current.interest
-                          );
-                          const refinanceRatio = calculatePaymentBreakdown(
-                            refinance.payment,
-                            refinance.principal,
-                            refinance.interest
-                          );
-                          const recastRatio = calculatePaymentBreakdown(
-                            recast.payment,
-                            recast.principal,
-                            recast.interest
-                          );
+                            const currentRatio = calculatePaymentBreakdown(
+                              current.payment,
+                              current.principal,
+                              current.interest
+                            );
+                            const refinanceRatio = calculatePaymentBreakdown(
+                              refinance.payment,
+                              refinance.principal,
+                              refinance.interest
+                            );
+                            const recastRatio = calculatePaymentBreakdown(
+                              recast.payment,
+                              recast.principal,
+                              recast.interest
+                            );
 
-                          return (
-                            <tr
-                              key={index}
-                              className={
-                                index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                              }
-                            >
-                              <td className="p-2 border">{current.month}</td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(current.payment)}
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(current.principal)}
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(current.interest)}
-                              </td>
-                              <td className="p-2 border text-sm">
-                                {currentRatio.principalPercentage}/
-                                {currentRatio.interestPercentage}
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(refinance.payment)}
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(refinance.principal)}
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(refinance.interest)}
-                              </td>
-                              <td className="p-2 border text-sm">
-                                {refinanceRatio.principalPercentage}/
-                                {refinanceRatio.interestPercentage}
-                              </td>
-                              <td className="p-2 border">
-                                <span
-                                  className={
-                                    refinanceSavings > 0
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }
-                                >
+                            return (
+                              <tr
+                                key={index}
+                                className={
+                                  index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                }
+                              >
+                                <td className="p-2 border">{current.month}</td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(current.payment)}
+                                </td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(current.principal)}
+                                </td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(current.interest)}
+                                </td>
+                                <td className="p-2 border text-sm">
+                                  {currentRatio.principalPercentage}/
+                                  {currentRatio.interestPercentage}
+                                </td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(refinance.payment)}
+                                </td>
+                                <td className="p-2 border">
                                   {currencyFormatter.format(
-                                    Math.abs(refinanceSavings)
+                                    refinance.principal
                                   )}
-                                  {refinanceSavings > 0 ? " saved" : " more"}
-                                </span>
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(recast.payment)}
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(recast.principal)}
-                              </td>
-                              <td className="p-2 border">
-                                {currencyFormatter.format(recast.interest)}
-                              </td>
-                              <td className="p-2 border text-sm">
-                                {recastRatio.principalPercentage}/
-                                {recastRatio.interestPercentage}
-                              </td>
-                              <td className="p-2 border">
-                                <span
-                                  className={
-                                    recastSavings > 0
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }
-                                >
-                                  {currencyFormatter.format(
-                                    Math.abs(recastSavings)
-                                  )}
-                                  {recastSavings > 0 ? " saved" : " more"}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-gray-100 font-semibold">
-                        <td className="p-2 border" colSpan={2}>
-                          First 2 Years Total:
-                        </td>
-                        <td className="p-2 border">
-                          {currencyFormatter.format(
-                            results.current.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.principal,
-                                0
-                              )
-                          )}
-                        </td>
-                        <td className="p-2 border">
-                          {currencyFormatter.format(
-                            results.current.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.interest,
-                                0
-                              )
-                          )}
-                        </td>
-                        <td className="p-2 border" colSpan={2}>
-                          {currencyFormatter.format(
-                            results.refinance.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.principal,
-                                0
-                              )
-                          )}
-                        </td>
-                        <td className="p-2 border">
-                          {currencyFormatter.format(
-                            results.refinance.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.interest,
-                                0
-                              )
-                          )}
-                        </td>
-                        <td className="p-2 border">
-                          {currencyFormatter.format(
-                            results.current.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.payment,
-                                0
-                              ) -
+                                </td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(refinance.interest)}
+                                </td>
+                                <td className="p-2 border text-sm">
+                                  {refinanceRatio.principalPercentage}/
+                                  {refinanceRatio.interestPercentage}
+                                </td>
+                                <td className="p-2 border">
+                                  <span
+                                    className={
+                                      refinanceSavings > 0
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                    }
+                                  >
+                                    {currencyFormatter.format(
+                                      Math.abs(refinanceSavings)
+                                    )}
+                                    {refinanceSavings > 0 ? " saved" : " more"}
+                                  </span>
+                                </td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(recast.payment)}
+                                </td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(recast.principal)}
+                                </td>
+                                <td className="p-2 border">
+                                  {currencyFormatter.format(recast.interest)}
+                                </td>
+                                <td className="p-2 border text-sm">
+                                  {recastRatio.principalPercentage}/
+                                  {recastRatio.interestPercentage}
+                                </td>
+                                <td className="p-2 border">
+                                  <span
+                                    className={
+                                      recastSavings > 0
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                    }
+                                  >
+                                    {currencyFormatter.format(
+                                      Math.abs(recastSavings)
+                                    )}
+                                    {recastSavings > 0 ? " saved" : " more"}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-100 font-semibold">
+                          <td className="p-2 border" colSpan={2}>
+                            First 2 Years Total:
+                          </td>
+                          <td className="p-2 border">
+                            {currencyFormatter.format(
+                              results.current.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.principal,
+                                  0
+                                )
+                            )}
+                          </td>
+                          <td className="p-2 border">
+                            {currencyFormatter.format(
+                              results.current.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.interest,
+                                  0
+                                )
+                            )}
+                          </td>
+                          <td className="p-2 border" colSpan={2}>
+                            {currencyFormatter.format(
                               results.refinance.schedule
                                 .slice(0, 24)
                                 .reduce(
                                   (sum: number, month: ScheduleEntry) =>
-                                    sum + month.payment,
+                                    sum + month.principal,
                                   0
                                 )
-                          )}
-                        </td>
-                        <td className="p-2 border" colSpan={2}>
-                          {currencyFormatter.format(
-                            results.recast.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.principal,
-                                0
-                              )
-                          )}
-                        </td>
-                        <td className="p-2 border">
-                          {currencyFormatter.format(
-                            results.recast.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.interest,
-                                0
-                              )
-                          )}
-                        </td>
-                        <td className="p-2 border">
-                          {currencyFormatter.format(
-                            results.current.schedule
-                              .slice(0, 24)
-                              .reduce(
-                                (sum: number, month: ScheduleEntry) =>
-                                  sum + month.payment,
-                                0
-                              ) -
-                              results.recast.schedule
+                            )}
+                          </td>
+                          <td className="p-2 border">
+                            {currencyFormatter.format(
+                              results.refinance.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.interest,
+                                  0
+                                )
+                            )}
+                          </td>
+                          <td className="p-2 border">
+                            {currencyFormatter.format(
+                              results.current.schedule
                                 .slice(0, 24)
                                 .reduce(
                                   (sum: number, month: ScheduleEntry) =>
                                     sum + month.payment,
                                   0
+                                ) -
+                                results.refinance.schedule
+                                  .slice(0, 24)
+                                  .reduce(
+                                    (sum: number, month: ScheduleEntry) =>
+                                      sum + month.payment,
+                                    0
+                                  )
+                            )}
+                          </td>
+                          <td className="p-2 border" colSpan={2}>
+                            {currencyFormatter.format(
+                              results.recast.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.principal,
+                                  0
                                 )
-                          )}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                            )}
+                          </td>
+                          <td className="p-2 border">
+                            {currencyFormatter.format(
+                              results.recast.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.interest,
+                                  0
+                                )
+                            )}
+                          </td>
+                          <td className="p-2 border">
+                            {currencyFormatter.format(
+                              results.current.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.payment,
+                                  0
+                                ) -
+                                results.recast.schedule
+                                  .slice(0, 24)
+                                  .reduce(
+                                    (sum: number, month: ScheduleEntry) =>
+                                      sum + month.payment,
+                                    0
+                                  )
+                            )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
                   * Showing first 24 months. Principal builds equity in your
@@ -1273,18 +1350,14 @@ export function MortgageCalculator() {
                     <CardContent>
                       {(() => {
                         const lumpSum = form.getValues().lumpSum || 0;
+                        const years = form.getValues().plannedStayYears;
                         const annualReturn =
                           (form.getValues().alternativeInvestmentReturn || 0) /
                           100;
-                        const monthsPlanned =
-                          form.getValues().plannedStayYears * 12;
+                        const monthsPlanned = years * 12;
 
                         const investmentValue =
-                          lumpSum *
-                          Math.pow(
-                            1 + annualReturn,
-                            form.getValues().plannedStayYears
-                          );
+                          lumpSum * Math.pow(1 + annualReturn, years);
                         const recastSavings =
                           (results.current.schedule[0].payment -
                             results.recast.schedule[0].payment) *
@@ -1293,40 +1366,97 @@ export function MortgageCalculator() {
 
                         const isInvestingBetter =
                           investmentValue > recastSavings + lumpSum;
+                        const comparisonData = generateInvestmentComparison(
+                          lumpSum,
+                          years
+                        );
 
                         return (
-                          <div className="space-y-2">
-                            <p>
-                              If you invest the lump sum instead (
-                              {percentFormatter.format(annualReturn)} annual
-                              return):
-                            </p>
-                            <p className="font-medium">
-                              Investment value after{" "}
-                              {form.getValues().plannedStayYears} years:{" "}
-                              {currencyFormatter.format(investmentValue)}
-                            </p>
-                            <p className="font-medium">
-                              Recast savings after{" "}
-                              {form.getValues().plannedStayYears} years:{" "}
-                              {currencyFormatter.format(
-                                recastSavings + lumpSum
-                              )}
-                            </p>
-                            <p
-                              className={
-                                isInvestingBetter
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {isInvestingBetter
-                                ? `Consider investing instead of recasting - you could earn ${currencyFormatter.format(
-                                    investmentValue - (recastSavings + lumpSum)
-                                  )} more`
-                                : `Recasting might be better - you'd save ${currencyFormatter.format(
-                                    recastSavings + lumpSum - investmentValue
-                                  )} more than investing`}
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <p>
+                                If you invest the lump sum instead (
+                                {percentFormatter.format(annualReturn)} annual
+                                return):
+                              </p>
+                              <p className="font-medium">
+                                Investment value after {years} years:{" "}
+                                {currencyFormatter.format(investmentValue)}
+                              </p>
+                              <p className="font-medium">
+                                Recast savings after {years} years:{" "}
+                                {currencyFormatter.format(
+                                  recastSavings + lumpSum
+                                )}
+                              </p>
+                              <p
+                                className={
+                                  isInvestingBetter
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                {isInvestingBetter
+                                  ? `Consider investing instead of recasting - you could earn ${currencyFormatter.format(
+                                      investmentValue -
+                                        (recastSavings + lumpSum)
+                                    )} more`
+                                  : `Recasting might be better - you'd save ${currencyFormatter.format(
+                                      recastSavings + lumpSum - investmentValue
+                                    )} more than investing`}
+                              </p>
+                            </div>
+
+                            <div className="h-[300px] mt-4">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={comparisonData}>
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis
+                                    dataKey="year"
+                                    label={{
+                                      value: "Years",
+                                      position: "insideBottom",
+                                      offset: -5,
+                                    }}
+                                  />
+                                  <YAxis
+                                    tickFormatter={(value) =>
+                                      currencyFormatter.format(value)
+                                    }
+                                    width={80}
+                                  />
+                                  <RechartsTooltip
+                                    formatter={(value: number) =>
+                                      currencyFormatter.format(value)
+                                    }
+                                  />
+                                  <Legend />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="Conservative (4%)"
+                                    stroke="#4B5563"
+                                    strokeWidth={2}
+                                  />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="Moderate (7%)"
+                                    stroke="#2563EB"
+                                    strokeWidth={2}
+                                  />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="Aggressive (10%)"
+                                    stroke="#059669"
+                                    strokeWidth={2}
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <p className="text-sm text-gray-500">
+                              This chart shows potential growth of your lump sum
+                              under different investment strategies over time.
+                              Past performance does not guarantee future
+                              results.
                             </p>
                           </div>
                         );
