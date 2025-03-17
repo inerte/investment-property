@@ -693,11 +693,22 @@ export function MortgageCalculator() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Typically 2-5% of loan amount. Default is 3% (
-                        {currencyFormatter.format(
-                          form.getValues().currentBalance * 0.03
-                        )}
-                        )
+                        Typically 2-5% of loan amount. Default is{" "}
+                        <button
+                          type="button"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                          onClick={() => {
+                            const value =
+                              form.getValues().currentBalance * 0.03;
+                            form.setValue("estimatedClosingCosts", value);
+                          }}
+                        >
+                          3% (
+                          {currencyFormatter.format(
+                            form.getValues().currentBalance * 0.03
+                          )}
+                          )
+                        </button>
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
