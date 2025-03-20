@@ -89,11 +89,6 @@ const formSchema = z.object({
     .max(100, "Rate must be less than 100")
     .default(0),
   lumpSum: z.coerce.number().min(0, "Lump sum must be 0 or greater").default(0),
-  plannedStayYears: z.coerce
-    .number()
-    .min(0, "Years must be 0 or greater")
-    .max(100, "Years must be less than 100")
-    .default(30),
   estimatedClosingCosts: z.coerce
     .number()
     .min(0, "Closing costs must be 0 or greater")
@@ -241,7 +236,6 @@ export function MortgageCalculator() {
       propertyValue: 0,
       newRate: 0,
       lumpSum: 0,
-      plannedStayYears: 30,
       estimatedClosingCosts: 0,
       useDetailedClosingCosts: false,
       refinanceClosingCosts: defaultRefinanceClosingCosts,
@@ -305,7 +299,6 @@ export function MortgageCalculator() {
           propertyValue: 0,
           newRate: 0,
           lumpSum: 0,
-          plannedStayYears: 30,
           estimatedClosingCosts: 0,
           useDetailedClosingCosts: false,
           refinanceClosingCosts: defaultRefinanceClosingCosts,
@@ -368,30 +361,18 @@ export function MortgageCalculator() {
     if (
       !values.currentBalance ||
       !values.currentRate ||
-      !values.remainingTerm
+      !values.remainingTerm ||
+      !values.monthlyPayment
     ) {
       setResults(null);
       return;
-    }
-
-    // Calculate current mortgage details
-    const currentMonthlyPayment = calculateMonthlyPayment({
-      principal: values.currentBalance,
-      annualRate: values.currentRate,
-      termMonths: values.remainingTerm,
-    });
-
-    // Update the form with the calculated monthly payment if it's not set
-    if (!values.monthlyPayment) {
-      form.setValue("monthlyPayment", currentMonthlyPayment);
-      values.monthlyPayment = currentMonthlyPayment;
     }
 
     const currentTotalInterest = calculateTotalInterest({
       principal: values.currentBalance,
       annualRate: values.currentRate,
       termMonths: values.remainingTerm,
-      monthlyPayment: currentMonthlyPayment,
+      monthlyPayment: values.monthlyPayment,
     });
 
     // Calculate refinance closing costs
@@ -427,7 +408,7 @@ export function MortgageCalculator() {
 
     const breakEvenMonths = calculateBreakEvenMonths(
       refinanceClosingCosts,
-      currentMonthlyPayment,
+      values.monthlyPayment,
       refinanceMonthlyPayment
     );
 
@@ -451,7 +432,7 @@ export function MortgageCalculator() {
       principal: values.currentBalance,
       annualRate: values.currentRate,
       termMonths: values.remainingTerm,
-      monthlyPayment: currentMonthlyPayment,
+      monthlyPayment: values.monthlyPayment,
     });
 
     const refinanceSchedule = calculateAmortizationSchedule({
@@ -470,7 +451,7 @@ export function MortgageCalculator() {
 
     setResults({
       current: {
-        monthlyPayment: currencyFormatter.format(currentMonthlyPayment),
+        monthlyPayment: currencyFormatter.format(values.monthlyPayment),
         totalInterest: currencyFormatter.format(currentTotalInterest),
         schedule: currentSchedule,
       },
@@ -660,24 +641,6 @@ export function MortgageCalculator() {
                 />
                 <FormField
                   control={form.control}
-                  name="plannedStayYears"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Planned Stay Years</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="1"
-                          placeholder="30"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="estimatedClosingCosts"
                   render={({ field }) => (
                     <FormItem>
@@ -699,7 +662,9 @@ export function MortgageCalculator() {
                           className="text-blue-600 hover:text-blue-800 underline"
                           onClick={() => {
                             const value =
-                              form.getValues().currentBalance * 0.03;
+                              Math.round(
+                                form.getValues().currentBalance * 0.03 * 100
+                              ) / 100;
                             form.setValue("estimatedClosingCosts", value);
                           }}
                         >
@@ -887,7 +852,6 @@ export function MortgageCalculator() {
                       propertyValue: 0,
                       newRate: 0,
                       lumpSum: 0,
-                      plannedStayYears: 30,
                       estimatedClosingCosts: 0,
                       useDetailedClosingCosts: false,
                       refinanceClosingCosts: defaultRefinanceClosingCosts,
@@ -1295,47 +1259,21 @@ export function MortgageCalculator() {
                       <CardTitle>Break-even Analysis</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p>
-                        Based on your planned stay of{" "}
-                        {form.getValues().plannedStayYears} years:
-                      </p>
                       {(() => {
-                        const monthsPlanned =
-                          form.getValues().plannedStayYears * 12;
                         const refinanceBreakEven = results.refinance.breakEven;
-                        const isWorthRefinancing =
-                          monthsPlanned > refinanceBreakEven;
+                        const monthlySavings =
+                          results.current.schedule[0].payment -
+                          results.refinance.schedule[0].payment;
 
                         // Calculate total closing costs
                         const closingCosts = Object.values(
                           form.getValues().refinanceClosingCosts || {}
                         ).reduce((sum, fee) => sum + (fee || 0), 0);
 
-                        // Calculate monthly savings
-                        const monthlySavings =
-                          results.current.schedule[0].payment -
-                          results.refinance.schedule[0].payment;
-
-                        // Calculate total savings over planned stay
-                        const totalSavings =
-                          monthlySavings * monthsPlanned - closingCosts;
-
                         return (
                           <div className="mt-4 space-y-2">
-                            <p
-                              className={
-                                isWorthRefinancing
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {isWorthRefinancing
-                                ? `Refinancing could be worthwhile - you'll break even in ${refinanceBreakEven} months and stay ${
-                                    monthsPlanned - refinanceBreakEven
-                                  } months after.`
-                                : `Refinancing might not be worth it - you'll move ${
-                                    refinanceBreakEven - monthsPlanned
-                                  } months before breaking even.`}
+                            <p className="text-gray-600">
+                              You'll break even in {refinanceBreakEven} months.
                             </p>
                             <p className="text-sm text-gray-600">
                               Monthly payment savings:{" "}
@@ -1344,10 +1282,6 @@ export function MortgageCalculator() {
                             <p className="text-sm text-gray-600">
                               Total closing costs:{" "}
                               {currencyFormatter.format(closingCosts)}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Total savings after {monthsPlanned} months:{" "}
-                              {currencyFormatter.format(totalSavings)}
                             </p>
                           </div>
                         );
@@ -1361,25 +1295,23 @@ export function MortgageCalculator() {
                     <CardContent>
                       {(() => {
                         const lumpSum = form.getValues().lumpSum || 0;
-                        const years = form.getValues().plannedStayYears;
                         const annualReturn =
                           (form.getValues().alternativeInvestmentReturn || 0) /
                           100;
-                        const monthsPlanned = years * 12;
 
                         const investmentValue =
-                          lumpSum * Math.pow(1 + annualReturn, years);
+                          lumpSum * Math.pow(1 + annualReturn, 5); // Using 5 years as a default comparison period
                         const recastSavings =
                           (results.current.schedule[0].payment -
                             results.recast.schedule[0].payment) *
-                            monthsPlanned -
+                            60 - // Using 5 years (60 months) as a default comparison period
                           (form.getValues().recastFee || 0);
 
                         const isInvestingBetter =
                           investmentValue > recastSavings + lumpSum;
                         const comparisonData = generateInvestmentComparison(
                           lumpSum,
-                          years
+                          5 // Using 5 years as a default comparison period
                         );
 
                         return (
@@ -1391,11 +1323,11 @@ export function MortgageCalculator() {
                                 return):
                               </p>
                               <p className="font-medium">
-                                Investment value after {years} years:{" "}
+                                Investment value after 5 years:{" "}
                                 {currencyFormatter.format(investmentValue)}
                               </p>
                               <p className="font-medium">
-                                Recast savings after {years} years:{" "}
+                                Recast savings after 5 years:{" "}
                                 {currencyFormatter.format(
                                   recastSavings + lumpSum
                                 )}
@@ -1465,8 +1397,8 @@ export function MortgageCalculator() {
                             </div>
                             <p className="text-sm text-gray-500">
                               This chart shows potential growth of your lump sum
-                              under different investment strategies over time.
-                              Past performance does not guarantee future
+                              under different investment strategies over 5
+                              years. Past performance does not guarantee future
                               results.
                             </p>
                           </div>
