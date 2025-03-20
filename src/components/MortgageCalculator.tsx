@@ -38,16 +38,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 
 const STORAGE_KEY = "mortgageCalculator";
 
@@ -185,33 +175,6 @@ function TooltipLabel({
       </Tooltip>
     </TooltipProvider>
   );
-}
-
-// Add type definition for investment data point
-type InvestmentDataPoint = {
-  year: number;
-  [key: string]: number;
-};
-
-function generateInvestmentComparison(
-  lumpSum: number,
-  years: number
-): InvestmentDataPoint[] {
-  const data: InvestmentDataPoint[] = [];
-  const scenarios = [
-    { name: "Conservative (4%)", rate: 0.04 },
-    { name: "Moderate (7%)", rate: 0.07 },
-    { name: "Aggressive (10%)", rate: 0.1 },
-  ];
-
-  for (let year = 0; year <= years; year++) {
-    const point: InvestmentDataPoint = { year };
-    scenarios.forEach(({ name, rate }) => {
-      point[name] = Number((lumpSum * Math.pow(1 + rate, year)).toFixed(2));
-    });
-    data.push(point);
-  }
-  return data;
 }
 
 export function MortgageCalculator() {
