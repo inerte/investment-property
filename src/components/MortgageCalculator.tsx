@@ -73,12 +73,6 @@ const formSchema = z.object({
     .number()
     .min(0, "Payment must be 0 or greater")
     .default(0),
-  remainingTerm: z.coerce
-    .number()
-    .int("Term must be a whole number")
-    .min(1, "Term must be at least 1 month")
-    .max(600, "Term must be less than 600 months")
-    .default(0),
   propertyValue: z.coerce
     .number()
     .min(0, "Value must be 0 or greater")
@@ -232,7 +226,6 @@ export function MortgageCalculator() {
       currentBalance: 0,
       currentRate: 0,
       monthlyPayment: 0,
-      remainingTerm: 0,
       propertyValue: 0,
       newRate: 0,
       lumpSum: 0,
@@ -273,7 +266,19 @@ export function MortgageCalculator() {
       const initialScenario = {
         id: uuidv4(),
         name: "Scenario 1",
-        data: form.getValues(),
+        data: {
+          currentBalance: 0,
+          currentRate: 0,
+          monthlyPayment: 0,
+          propertyValue: 0,
+          newRate: 0,
+          lumpSum: 0,
+          estimatedClosingCosts: 0,
+          useDetailedClosingCosts: false,
+          refinanceClosingCosts: defaultRefinanceClosingCosts,
+          recastFee: 250,
+          alternativeInvestmentReturn: 7,
+        },
       };
       setScenarios([initialScenario]);
       setActiveScenarioId(initialScenario.id);
@@ -295,7 +300,6 @@ export function MortgageCalculator() {
           currentBalance: 0,
           currentRate: 0,
           monthlyPayment: 0,
-          remainingTerm: 0,
           propertyValue: 0,
           newRate: 0,
           lumpSum: 0,
@@ -361,17 +365,18 @@ export function MortgageCalculator() {
     if (
       !values.currentBalance ||
       !values.currentRate ||
-      !values.remainingTerm ||
       !values.monthlyPayment
     ) {
       setResults(null);
       return;
     }
 
+    const DEFAULT_TERM_MONTHS = 360; // 30 years
+
     const currentTotalInterest = calculateTotalInterest({
       principal: values.currentBalance,
       annualRate: values.currentRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
       monthlyPayment: values.monthlyPayment,
     });
 
@@ -396,13 +401,13 @@ export function MortgageCalculator() {
     const refinanceMonthlyPayment = calculateMonthlyPayment({
       principal: refinancePrincipal,
       annualRate: values.newRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
     });
 
     const refinanceTotalInterest = calculateTotalInterest({
       principal: refinancePrincipal,
       annualRate: values.newRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
       monthlyPayment: refinanceMonthlyPayment,
     });
 
@@ -416,14 +421,14 @@ export function MortgageCalculator() {
     const recastMonthlyPayment = calculateRecastPayment({
       principal: values.currentBalance,
       annualRate: values.currentRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
       extraPayment: values.lumpSum,
     });
 
     const recastTotalInterest = calculateTotalInterest({
       principal: values.currentBalance - values.lumpSum,
       annualRate: values.currentRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
       monthlyPayment: recastMonthlyPayment,
     });
 
@@ -431,21 +436,21 @@ export function MortgageCalculator() {
     const currentSchedule = calculateAmortizationSchedule({
       principal: values.currentBalance,
       annualRate: values.currentRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
       monthlyPayment: values.monthlyPayment,
     });
 
     const refinanceSchedule = calculateAmortizationSchedule({
       principal: refinancePrincipal,
       annualRate: values.newRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
       monthlyPayment: refinanceMonthlyPayment,
     });
 
     const recastSchedule = calculateAmortizationSchedule({
       principal: values.currentBalance - values.lumpSum,
       annualRate: values.currentRate,
-      termMonths: values.remainingTerm,
+      termMonths: DEFAULT_TERM_MONTHS,
       monthlyPayment: recastMonthlyPayment,
     });
 
@@ -557,19 +562,6 @@ export function MortgageCalculator() {
                           placeholder="1500"
                           {...field}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="remainingTerm"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Remaining Term (months)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="300" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -848,7 +840,6 @@ export function MortgageCalculator() {
                       currentBalance: 0,
                       currentRate: 0,
                       monthlyPayment: 0,
-                      remainingTerm: 0,
                       propertyValue: 0,
                       newRate: 0,
                       lumpSum: 0,
