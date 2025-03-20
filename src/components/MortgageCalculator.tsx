@@ -63,10 +63,6 @@ const formSchema = z.object({
     .number()
     .min(0, "Payment must be 0 or greater")
     .default(0),
-  propertyValue: z.coerce
-    .number()
-    .min(0, "Value must be 0 or greater")
-    .default(0),
   newRate: z.coerce
     .number()
     .min(0, "Rate must be 0 or greater")
@@ -88,11 +84,6 @@ const formSchema = z.object({
     })
     .default(defaultRefinanceClosingCosts),
   recastFee: z.coerce.number().min(0).default(250),
-  alternativeInvestmentReturn: z.coerce
-    .number()
-    .min(0, "Return must be 0 or greater")
-    .max(100, "Return must be less than 100")
-    .default(7),
 });
 
 export type FormSchema = z.infer<typeof formSchema>;
@@ -189,14 +180,12 @@ export function MortgageCalculator() {
       currentBalance: 0,
       currentRate: 0,
       monthlyPayment: 0,
-      propertyValue: 0,
       newRate: 0,
       lumpSum: 0,
       estimatedClosingCosts: 0,
       useDetailedClosingCosts: false,
       refinanceClosingCosts: defaultRefinanceClosingCosts,
       recastFee: 250,
-      alternativeInvestmentReturn: 7,
     },
     mode: "onChange",
   });
@@ -233,14 +222,12 @@ export function MortgageCalculator() {
           currentBalance: 0,
           currentRate: 0,
           monthlyPayment: 0,
-          propertyValue: 0,
           newRate: 0,
           lumpSum: 0,
           estimatedClosingCosts: 0,
           useDetailedClosingCosts: false,
           refinanceClosingCosts: defaultRefinanceClosingCosts,
           recastFee: 250,
-          alternativeInvestmentReturn: 7,
         },
       };
       setScenarios([initialScenario]);
@@ -263,14 +250,12 @@ export function MortgageCalculator() {
           currentBalance: 0,
           currentRate: 0,
           monthlyPayment: 0,
-          propertyValue: 0,
           newRate: 0,
           lumpSum: 0,
           estimatedClosingCosts: 0,
           useDetailedClosingCosts: false,
           refinanceClosingCosts: defaultRefinanceClosingCosts,
           recastFee: 250,
-          alternativeInvestmentReturn: 7,
         };
 
     const newScenario: Scenario = {
@@ -532,24 +517,6 @@ export function MortgageCalculator() {
                 />
                 <FormField
                   control={form.control}
-                  name="propertyValue"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Current Property Value ($)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="300000"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="newRate"
                   render={({ field }) => (
                     <FormItem>
@@ -767,30 +734,6 @@ export function MortgageCalculator() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="alternativeInvestmentReturn"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Alternative Investment Return (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.125"
-                          placeholder="7"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Expected annual return if you invested the lump sum
-                        instead of using it for recast/refinance. Common
-                        benchmarks: Stock market (7-10%), High-yield savings
-                        (4-5%), Corporate bonds (5-7%).
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
               <div className="flex gap-4">
                 <Button type="submit">Calculate Options</Button>
@@ -803,14 +746,12 @@ export function MortgageCalculator() {
                       currentBalance: 0,
                       currentRate: 0,
                       monthlyPayment: 0,
-                      propertyValue: 0,
                       newRate: 0,
                       lumpSum: 0,
                       estimatedClosingCosts: 0,
                       useDetailedClosingCosts: false,
                       refinanceClosingCosts: defaultRefinanceClosingCosts,
                       recastFee: 250,
-                      alternativeInvestmentReturn: 7,
                     });
                     setResults(null);
                   }}
