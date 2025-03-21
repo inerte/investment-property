@@ -38,6 +38,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "mortgageCalculator";
 
@@ -431,17 +432,36 @@ export function MortgageCalculator() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <Card>
         <CardHeader>
-          <CardTitle>Mortgage Calculator</CardTitle>
+          <CardTitle>Refinance vs Recast Mortgage Calculator</CardTitle>
+          <p className="text-muted-foreground mt-2">
+            Compare your current mortgage with refinancing and recasting
+            options. This calculator helps you make an informed decision by
+            showing:
+          </p>
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li>Monthly payment differences</li>
+            <li>Total interest savings</li>
+            <li>Break-even period for refinancing</li>
+            <li>Detailed payment breakdowns</li>
+          </ul>
         </CardHeader>
         <CardContent>
-          <ScenarioTabs
-            scenarios={scenarios}
-            activeScenario={activeScenarioId}
-            onScenarioChange={handleScenarioChange}
-            onScenarioAdd={handleScenarioAdd}
-            onScenarioRename={handleScenarioRename}
-            onScenarioDelete={handleScenarioDelete}
-          />
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Scenarios</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create and compare different mortgage scenarios. Double-click a
+              scenario name to rename it. Use the copy button to create
+              variations of your scenarios.
+            </p>
+            <ScenarioTabs
+              scenarios={scenarios}
+              activeScenario={activeScenarioId}
+              onScenarioChange={handleScenarioChange}
+              onScenarioAdd={handleScenarioAdd}
+              onScenarioRename={handleScenarioRename}
+              onScenarioDelete={handleScenarioDelete}
+            />
+          </div>
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit((values) => {
@@ -461,10 +481,10 @@ export function MortgageCalculator() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        <TooltipLabel label="Current Mortgage Balance ($)">
+                        <TooltipLabel label="Current Mortgage Balance">
                           The remaining principal balance on your current
                           mortgage. This can be found on your most recent
-                          mortgage statement.
+                          mortgage statement or online banking portal.
                         </TooltipLabel>
                       </FormLabel>
                       <FormControl>
@@ -484,7 +504,12 @@ export function MortgageCalculator() {
                   name="currentRate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Interest Rate (%)</FormLabel>
+                      <FormLabel>
+                        <TooltipLabel label="Current Interest Rate">
+                          Your current annual interest rate as a percentage. For
+                          example, if your rate is 4.5%, enter 4.5.
+                        </TooltipLabel>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -502,7 +527,13 @@ export function MortgageCalculator() {
                   name="monthlyPayment"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Monthly Payment ($)</FormLabel>
+                      <FormLabel>
+                        <TooltipLabel label="Current Monthly Payment">
+                          Your current monthly mortgage payment including
+                          principal and interest. This can be found on your
+                          mortgage statement.
+                        </TooltipLabel>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -520,7 +551,13 @@ export function MortgageCalculator() {
                   name="newRate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>New Interest Rate (%)</FormLabel>
+                      <FormLabel>
+                        <TooltipLabel label="New Interest Rate">
+                          The new annual interest rate you're considering for
+                          refinancing. Enter as a percentage (e.g., 3.5 for
+                          3.5%).
+                        </TooltipLabel>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -538,7 +575,13 @@ export function MortgageCalculator() {
                   name="lumpSum"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Available Lump Sum ($)</FormLabel>
+                      <FormLabel>
+                        <TooltipLabel label="Available Lump Sum">
+                          The amount of money you have available to apply to
+                          your mortgage principal. This will be used to
+                          calculate both refinance and recast options.
+                        </TooltipLabel>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -552,8 +595,8 @@ export function MortgageCalculator() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Amount available to apply to principal (used for both
-                        refinance and recast calculations)
+                        This amount will be applied to reduce your principal
+                        balance
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -564,7 +607,13 @@ export function MortgageCalculator() {
                   name="estimatedClosingCosts"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estimated Closing Costs ($)</FormLabel>
+                      <FormLabel>
+                        <TooltipLabel label="Estimated Closing Costs">
+                          The total cost of refinancing, including fees for
+                          title insurance, appraisal, origination, and other
+                          closing expenses.
+                        </TooltipLabel>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -602,7 +651,10 @@ export function MortgageCalculator() {
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="closing-costs">
                     <AccordionTrigger>
-                      Detailed Closing Costs Breakdown
+                      <TooltipLabel label="Detailed Closing Costs Breakdown">
+                        Break down your closing costs into specific categories
+                        for more accurate calculations.
+                      </TooltipLabel>
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-4">
@@ -611,7 +663,13 @@ export function MortgageCalculator() {
                           name="refinanceClosingCosts.originationFee"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Loan Origination Fee ($)</FormLabel>
+                              <FormLabel>
+                                <TooltipLabel label="Loan Origination Fee">
+                                  A fee charged by the lender for processing
+                                  your loan application. Typically 0.5-1% of the
+                                  loan amount.
+                                </TooltipLabel>
+                              </FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
@@ -620,9 +678,6 @@ export function MortgageCalculator() {
                                   {...field}
                                 />
                               </FormControl>
-                              <FormDescription>
-                                Usually 0.5-1% of loan amount
-                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -632,7 +687,13 @@ export function MortgageCalculator() {
                           name="refinanceClosingCosts.titleInsurance"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Title Insurance ($)</FormLabel>
+                              <FormLabel>
+                                <TooltipLabel label="Title Insurance">
+                                  Insurance that protects the lender and you
+                                  against any title defects or claims on the
+                                  property.
+                                </TooltipLabel>
+                              </FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
@@ -650,7 +711,12 @@ export function MortgageCalculator() {
                           name="refinanceClosingCosts.appraisalFee"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Appraisal Fee ($)</FormLabel>
+                              <FormLabel>
+                                <TooltipLabel label="Appraisal Fee">
+                                  Cost of a professional appraisal to determine
+                                  the current market value of your property.
+                                </TooltipLabel>
+                              </FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
@@ -671,7 +737,12 @@ export function MortgageCalculator() {
                           name="refinanceClosingCosts.recordingFees"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Recording Fees ($)</FormLabel>
+                              <FormLabel>
+                                <TooltipLabel label="Recording Fees">
+                                  Fees charged by the county or city to record
+                                  the new mortgage documents.
+                                </TooltipLabel>
+                              </FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
@@ -689,7 +760,13 @@ export function MortgageCalculator() {
                           name="refinanceClosingCosts.otherFees"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Other Fees ($)</FormLabel>
+                              <FormLabel>
+                                <TooltipLabel label="Other Fees">
+                                  Additional fees such as credit report, flood
+                                  certification, tax service, and other
+                                  miscellaneous charges.
+                                </TooltipLabel>
+                              </FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
@@ -698,10 +775,6 @@ export function MortgageCalculator() {
                                   {...field}
                                 />
                               </FormControl>
-                              <FormDescription>
-                                Additional fees like credit report, flood
-                                certification, etc.
-                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -715,7 +788,12 @@ export function MortgageCalculator() {
                   name="recastFee"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Recast Fee ($)</FormLabel>
+                      <FormLabel>
+                        <TooltipLabel label="Recast Fee">
+                          A one-time fee charged by your lender to recast your
+                          mortgage after making a large principal payment.
+                        </TooltipLabel>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -837,6 +915,36 @@ export function MortgageCalculator() {
                       <p>
                         Break-even Period: {results.refinance.breakEven} months
                       </p>
+                      <p className="mt-2">
+                        Monthly Savings:{" "}
+                        <span className="text-green-600">
+                          {currencyFormatter.format(
+                            results.current.schedule[0].payment -
+                              results.refinance.schedule[0].payment
+                          )}
+                        </span>
+                      </p>
+                      <p className="mt-2">
+                        First 2 Years Total Savings:{" "}
+                        <span className="text-green-600">
+                          {currencyFormatter.format(
+                            results.current.schedule
+                              .slice(0, 24)
+                              .reduce(
+                                (sum: number, month: ScheduleEntry) =>
+                                  sum + month.payment,
+                                0
+                              ) -
+                              results.refinance.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.payment,
+                                  0
+                                )
+                          )}
+                        </span>
+                      </p>
                     </CardContent>
                   </Card>
                   <Card>
@@ -919,7 +1027,7 @@ export function MortgageCalculator() {
                           <th className="p-2 text-left border" colSpan={5}>
                             Current Mortgage
                           </th>
-                          <th className="p-2 text-left border" colSpan={5}>
+                          <th className="p-2 text-left border" colSpan={4}>
                             Refinance Option
                           </th>
                         </tr>
@@ -933,7 +1041,6 @@ export function MortgageCalculator() {
                           <th className="p-2 text-left border">Principal</th>
                           <th className="p-2 text-left border">Interest</th>
                           <th className="p-2 text-left border">Ratio (P/I)</th>
-                          <th className="p-2 text-left border">Savings</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -941,8 +1048,6 @@ export function MortgageCalculator() {
                           .slice(0, 24)
                           .map((current: ScheduleEntry, index: number) => {
                             const refinance = results.refinance.schedule[index];
-                            const refinanceSavings =
-                              current.payment - refinance.payment;
 
                             const currentRatio = calculatePaymentBreakdown(
                               current.payment,
@@ -990,20 +1095,6 @@ export function MortgageCalculator() {
                                 <td className="p-2 border text-sm">
                                   {refinanceRatio.principalPercentage}/
                                   {refinanceRatio.interestPercentage}
-                                </td>
-                                <td className="p-2 border">
-                                  <span
-                                    className={
-                                      refinanceSavings > 0
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                    }
-                                  >
-                                    {currencyFormatter.format(
-                                      Math.abs(refinanceSavings)
-                                    )}
-                                    {refinanceSavings > 0 ? " saved" : " more"}
-                                  </span>
                                 </td>
                               </tr>
                             );
@@ -1056,24 +1147,6 @@ export function MortgageCalculator() {
                                     sum + month.interest,
                                   0
                                 )
-                            )}
-                          </td>
-                          <td className="p-2 border">
-                            {currencyFormatter.format(
-                              results.current.schedule
-                                .slice(0, 24)
-                                .reduce(
-                                  (sum: number, month: ScheduleEntry) =>
-                                    sum + month.payment,
-                                  0
-                                ) -
-                                results.refinance.schedule
-                                  .slice(0, 24)
-                                  .reduce(
-                                    (sum: number, month: ScheduleEntry) =>
-                                      sum + month.payment,
-                                    0
-                                  )
                             )}
                           </td>
                         </tr>

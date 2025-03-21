@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Investment Property Calculator",
+  title: "Refinance vs Recast Mortgage Calculator",
   description: "Calculate mortgage refinancing and recasting options",
 };
 
