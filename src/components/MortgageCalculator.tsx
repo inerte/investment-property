@@ -38,7 +38,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { InfoIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "mortgageCalculator";
 
@@ -553,8 +552,8 @@ export function MortgageCalculator() {
                     <FormItem>
                       <FormLabel>
                         <TooltipLabel label="New Interest Rate">
-                          The new annual interest rate you're considering for
-                          refinancing. Enter as a percentage (e.g., 3.5 for
+                          The new annual interest rate you&apos;re considering
+                          for refinancing. Enter as a percentage (e.g., 3.5 for
                           3.5%).
                         </TooltipLabel>
                       </FormLabel>
