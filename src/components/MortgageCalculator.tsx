@@ -544,9 +544,7 @@ export function MortgageCalculator() {
                           type="number"
                           step="0.01"
                           min="0"
-                          placeholder="50000"
                           {...field}
-                          value={field.value === 0 ? "" : field.value}
                           onChange={(e) => {
                             const value = e.target.value;
                             field.onChange(value === "" ? 0 : Number(value));
@@ -874,6 +872,36 @@ export function MortgageCalculator() {
                       <p className="mt-4">
                         Total Interest: {results.recast.totalInterest}
                       </p>
+                      <p className="mt-2">
+                        Monthly Savings:{" "}
+                        <span className="text-green-600">
+                          {currencyFormatter.format(
+                            results.current.schedule[0].payment -
+                              results.recast.schedule[0].payment
+                          )}
+                        </span>
+                      </p>
+                      <p className="mt-2">
+                        First 2 Years Total Savings:{" "}
+                        <span className="text-green-600">
+                          {currencyFormatter.format(
+                            results.current.schedule
+                              .slice(0, 24)
+                              .reduce(
+                                (sum: number, month: ScheduleEntry) =>
+                                  sum + month.payment,
+                                0
+                              ) -
+                              results.recast.schedule
+                                .slice(0, 24)
+                                .reduce(
+                                  (sum: number, month: ScheduleEntry) =>
+                                    sum + month.payment,
+                                  0
+                                )
+                          )}
+                        </span>
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
@@ -894,9 +922,6 @@ export function MortgageCalculator() {
                           <th className="p-2 text-left border" colSpan={5}>
                             Refinance Option
                           </th>
-                          <th className="p-2 text-left border" colSpan={5}>
-                            Recast Option
-                          </th>
                         </tr>
                         <tr className="bg-gray-50">
                           <th className="p-2 text-left border">Month</th>
@@ -909,11 +934,6 @@ export function MortgageCalculator() {
                           <th className="p-2 text-left border">Interest</th>
                           <th className="p-2 text-left border">Ratio (P/I)</th>
                           <th className="p-2 text-left border">Savings</th>
-                          <th className="p-2 text-left border">Payment</th>
-                          <th className="p-2 text-left border">Principal</th>
-                          <th className="p-2 text-left border">Interest</th>
-                          <th className="p-2 text-left border">Ratio (P/I)</th>
-                          <th className="p-2 text-left border">Savings</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -921,11 +941,8 @@ export function MortgageCalculator() {
                           .slice(0, 24)
                           .map((current: ScheduleEntry, index: number) => {
                             const refinance = results.refinance.schedule[index];
-                            const recast = results.recast.schedule[index];
                             const refinanceSavings =
                               current.payment - refinance.payment;
-                            const recastSavings =
-                              current.payment - recast.payment;
 
                             const currentRatio = calculatePaymentBreakdown(
                               current.payment,
@@ -936,11 +953,6 @@ export function MortgageCalculator() {
                               refinance.payment,
                               refinance.principal,
                               refinance.interest
-                            );
-                            const recastRatio = calculatePaymentBreakdown(
-                              recast.payment,
-                              recast.principal,
-                              recast.interest
                             );
 
                             return (
@@ -991,33 +1003,6 @@ export function MortgageCalculator() {
                                       Math.abs(refinanceSavings)
                                     )}
                                     {refinanceSavings > 0 ? " saved" : " more"}
-                                  </span>
-                                </td>
-                                <td className="p-2 border">
-                                  {currencyFormatter.format(recast.payment)}
-                                </td>
-                                <td className="p-2 border">
-                                  {currencyFormatter.format(recast.principal)}
-                                </td>
-                                <td className="p-2 border">
-                                  {currencyFormatter.format(recast.interest)}
-                                </td>
-                                <td className="p-2 border text-sm">
-                                  {recastRatio.principalPercentage}/
-                                  {recastRatio.interestPercentage}
-                                </td>
-                                <td className="p-2 border">
-                                  <span
-                                    className={
-                                      recastSavings > 0
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                    }
-                                  >
-                                    {currencyFormatter.format(
-                                      Math.abs(recastSavings)
-                                    )}
-                                    {recastSavings > 0 ? " saved" : " more"}
                                   </span>
                                 </td>
                               </tr>
@@ -1083,46 +1068,6 @@ export function MortgageCalculator() {
                                   0
                                 ) -
                                 results.refinance.schedule
-                                  .slice(0, 24)
-                                  .reduce(
-                                    (sum: number, month: ScheduleEntry) =>
-                                      sum + month.payment,
-                                    0
-                                  )
-                            )}
-                          </td>
-                          <td className="p-2 border" colSpan={2}>
-                            {currencyFormatter.format(
-                              results.recast.schedule
-                                .slice(0, 24)
-                                .reduce(
-                                  (sum: number, month: ScheduleEntry) =>
-                                    sum + month.principal,
-                                  0
-                                )
-                            )}
-                          </td>
-                          <td className="p-2 border">
-                            {currencyFormatter.format(
-                              results.recast.schedule
-                                .slice(0, 24)
-                                .reduce(
-                                  (sum: number, month: ScheduleEntry) =>
-                                    sum + month.interest,
-                                  0
-                                )
-                            )}
-                          </td>
-                          <td className="p-2 border">
-                            {currencyFormatter.format(
-                              results.current.schedule
-                                .slice(0, 24)
-                                .reduce(
-                                  (sum: number, month: ScheduleEntry) =>
-                                    sum + month.payment,
-                                  0
-                                ) -
-                                results.recast.schedule
                                   .slice(0, 24)
                                   .reduce(
                                     (sum: number, month: ScheduleEntry) =>
